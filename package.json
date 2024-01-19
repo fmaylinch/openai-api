@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "openai": "^4.24.7",
+    "openai-edge": "^1.2.2"
   }
 }
