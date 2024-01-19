@@ -16,9 +16,7 @@ app.post('/chat', async (req, res) => {
         apiKey: req.body.apiKey
     });
 
-    let messages = [
-        {role: "user", content: req.body.message}
-    ]
+    let messages = req.body.messages;
 
     const response = await openai.chat.completions.create({
         model: req.body.model || "gpt-4",
