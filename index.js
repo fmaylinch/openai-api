@@ -10,18 +10,18 @@ app.get('/', async (req, res) => {
 })
 
 app.post('/chat', async (req, res) => {
-    console.log("request body", req.body);
 
-    let openai = new OpenAI({
-        apiKey: req.body.apiKey
-    });
+    const auth = req.header("Authorization");
+    let apiKey = auth.split(" ")[1];
 
-    let messages = req.body.messages;
+    let openai = new OpenAI({ apiKey: apiKey });
 
-    const response = await openai.chat.completions.create({
+    let chatPayload = {
         model: req.body.model || "gpt-4",
-        messages
-    });
+        messages: req.body.messages
+    };
+
+    const response = await openai.chat.completions.create(chatPayload);
 
     res.status(200).json(response);
 })
