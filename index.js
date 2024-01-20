@@ -9,6 +9,7 @@ app.get('/', async (req, res) => {
     res.status(200).json('App is running');
 })
 
+// chat.completions.create
 app.post('/chat', async (req, res) => {
 
     const auth = req.header("Authorization");
@@ -22,6 +23,37 @@ app.post('/chat', async (req, res) => {
     };
 
     const response = await openai.chat.completions.create(chatPayload);
+
+    res.status(200).json(response);
+})
+
+// generic call
+app.post('/call', async (req, res) => {
+
+    const auth = req.header("Authorization");
+    const apiKey = auth.split(" ")[1];
+
+    const openai = new OpenAI({ apiKey: apiKey });
+
+    let method = openai;
+    for (let segment of req.body.methodPath) { // e.g. ["chat", "completions", "create"]
+        method = method[segment];
+        if (!method) {
+            res.status(400).json({
+                error: `unknown segment ${segment} in path ${req.body.methodPath}`
+            });
+            return;
+        }
+    }
+
+    if (req.body.debug) {
+        res.status(200).json({
+            info: `would call ${req.body.methodPath.join('.')} with payload: ${JSON.stringify(req.body.payload)}`
+        });
+        return;
+    }
+
+    const response = await method(req.body.payload);
 
     res.status(200).json(response);
 })
