@@ -35,28 +35,40 @@ app.post('/call', async (req, res) => {
 
     const openai = new OpenAI({ apiKey: apiKey });
 
-    let method = openai;
-    for (let segment of req.body.methodPath) { // e.g. ["chat", "completions", "create"]
-        method = method[segment];
-        if (!method) {
-            res.status(400).json({
-                error: `unknown segment ${segment} in path ${req.body.methodPath}`
-            });
-            return;
-        }
+    let method;
+    try {
+        method = getMethod(openai, req.body.methodPath); // e.g. ["chat", "completions", "create"]
+    } catch (error) {
+        return res.status(400).json({ error });
     }
 
     if (req.body.debug) {
-        res.status(200).json({
+        return res.status(200).json({
             info: `would call ${req.body.methodPath.join('.')} with payload: ${JSON.stringify(req.body.payload)}`
         });
-        return;
     }
 
-    const response = await method(req.body.payload);
-
-    res.status(200).json(response);
+    try {
+        const response = await method(req.body.payload);
+        res.status(200).json(response);
+    } catch (error) {
+        console.log("Error from OpenAI API:", error);
+        return res.status(406).json({ error });
+    }
 })
+
+function getMethod(object, methodPath) {
+    let parentObject;
+    for (let segment of methodPath) {
+        parentObject = object;
+        object = object[segment];
+        if (!object) {
+            throw `unknown segment '${segment}' in path: ${methodPath}`;
+        }
+    }
+    // bind method, so it can be called standalone
+    return object.bind(parentObject);
+}
 
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
