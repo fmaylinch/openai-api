@@ -17,12 +17,7 @@ app.post('/chat', async (req, res) => {
 
     let openai = new OpenAI({ apiKey: apiKey });
 
-    let chatPayload = {
-        model: req.body.model || "gpt-4",
-        messages: req.body.messages
-    };
-
-    const response = await openai.chat.completions.create(chatPayload);
+    const response = await openai.chat.completions.create(req.body);
 
     res.status(200).json(response);
 })
