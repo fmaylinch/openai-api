@@ -26,25 +26,30 @@ app.post('/chat', async (req, res) => {
 app.post('/call', async (req, res) => {
 
     const auth = req.header("Authorization");
-    const apiKey = auth.split(" ")[1];
+    const apiKey = auth.split(" ")[1]; // auth should be "Bearer xxx"
 
     const openai = new OpenAI({ apiKey: apiKey });
 
+    // Custom headers to select the call
+    const methodPath = req.header("OpenAI-Bridge-MethodPath"); // e.g. "chat.completions.create"
+    const debugMode = req.header("OpenAI-Bridge-DebugMode");
+
     let method;
     try {
-        method = getMethod(openai, req.body.methodPath); // e.g. ["chat", "completions", "create"]
+        method = getMethod(openai, methodPath);
     } catch (error) {
         return res.status(400).json({ error });
     }
 
-    if (req.body.debug) {
+    console.log(`debugMode: '${debugMode}'`);
+    if (debugMode === "true") {
         return res.status(200).json({
-            info: `would call ${req.body.methodPath.join('.')} with payload: ${JSON.stringify(req.body.payload)}`
+            info: `would call ${methodPath} with payload: ${JSON.stringify(req.body)}`
         });
     }
 
     try {
-        const response = await method(req.body.payload);
+        const response = await method(req.body);
         res.status(200).json(response);
     } catch (error) {
         console.log("Error from OpenAI API:", error);
@@ -53,8 +58,9 @@ app.post('/call', async (req, res) => {
 })
 
 function getMethod(object, methodPath) {
+    const methodPathArray = methodPath.split(".");
     let parentObject;
-    for (let segment of methodPath) {
+    for (let segment of methodPathArray) {
         parentObject = object;
         object = object[segment];
         if (!object) {
